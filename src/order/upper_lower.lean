@@ -808,6 +808,28 @@ def Iic_Inf_hom : Inf_hom α (lower_set α) := ⟨Iic, λ s, (Iic_Inf s).trans I
 end complete_lattice
 end lower_set
 
+section isos
+
+variables [has_le α] [has_le β]
+
+@[simps apply]
+def upper_lower_dual_iso : upper_set α ≃o lower_set αᵒᵈ := 
+{ to_fun := upper_set.to_dual,
+  inv_fun := lower_set.of_dual,
+  left_inv := upper_set.to_dual_of_dual,
+  right_inv := lower_set.of_dual_to_dual,
+  map_rel_iff' := λ _ _, iff.rfl }
+
+@[simps apply]
+def lower_upper_dual_iso : lower_set α ≃o upper_set αᵒᵈ := 
+{ to_fun := lower_set.to_dual,
+  inv_fun := upper_set.of_dual,
+  left_inv := lower_set.to_dual_of_dual,
+  right_inv := upper_set.of_dual_to_dual,
+  map_rel_iff' := λ _ _, iff.rfl }
+
+end isos
+
 section closures
 
 section preorder
@@ -881,7 +903,25 @@ lemma to_dual_upper_closure (s : set α) :
 lemma of_dual_upper_closure (s : set αᵒᵈ) :
   (upper_closure s).of_dual = lower_closure (to_dual ⁻¹' s) := rfl
 
+@[simp] lemma preimage_to_dual_of_dual (s : set αᵒᵈ) : 
+  of_dual ⁻¹' (to_dual ⁻¹' s) = s := by {ext,simp}
 
+@[simp] lemma preimage_of_dual_to_dual (s : set α) : 
+  to_dual ⁻¹' (of_dual ⁻¹' s) = s := by {ext,simp}
+
+lemma upper_set.comap_eq_map_symm (t : upper_set β) (φ : α ≃o β): 
+  (t.comap φ : upper_set α) = t.map φ.symm := 
+upper_set.ext (preimage_equiv_eq_image_symm _ _)
+
+@[simp] lemma upper_set.of_dual_map (s : upper_set αᵒᵈ) (φ : α ≃o β) :
+  s.of_dual.map φ = (s.map φ.dual).to_dual  := rfl 
+
+@[simp] lemma map_lower_closure (s : set α) (φ : α ≃o β) : 
+  (lower_closure s).map φ = lower_closure (φ '' s) := 
+begin
+  -- I don't see how to prove this without ext - it should follow by duality from map_upper_closure. 
+  
+end 
 
 -- lemma upper_closure_eq_top_iff : upper_closure s = ⊤ ↔ s = univ :=
 -- begin
