@@ -414,7 +414,7 @@ namespace upper_set
 @[simp] lemma to_dual_inf (s t : upper_set α) :
   (s ⊓ t).to_dual = s.to_dual ⊓ t.to_dual := rfl
 @[simp] lemma to_dual_sup (s t : upper_set α) :
-  (s ⊓ t).to_dual = s.to_dual ⊓ t.to_dual := rfl
+  (s ⊔ t).to_dual = s.to_dual ⊔ t.to_dual := rfl
 @[simp] lemma of_dual_inf (s t : upper_set αᵒᵈ) :
   (s ⊓ t).of_dual = s.of_dual ⊓ t.of_dual := rfl
 @[simp] lemma of_dual_sup (s t : upper_set αᵒᵈ) :
@@ -476,7 +476,7 @@ protected def of_dual (s : lower_set αᵒᵈ) : upper_set α :=
 @[simp] lemma to_dual_inf (s t : lower_set α) :
   (s ⊓ t).to_dual = s.to_dual ⊓ t.to_dual := rfl
 @[simp] lemma to_dual_sup (s t : lower_set α) :
-  (s ⊓ t).to_dual = s.to_dual ⊓ t.to_dual := rfl
+  (s ⊔ t).to_dual = s.to_dual ⊔ t.to_dual := rfl
 @[simp] lemma of_dual_inf (s t : lower_set αᵒᵈ) :
   (s ⊓ t).of_dual = s.of_dual ⊓ t.of_dual := rfl
 @[simp] lemma of_dual_sup (s t : lower_set αᵒᵈ) :
@@ -534,6 +534,10 @@ def lower_set.map (s : lower_set α) (φ : F) : lower_set β := ⟨φ '' s, s.lo
 
 @[simp] lemma upper_set.coe_map (s : upper_set α) (φ : F) : (s.map φ : set β) = φ '' s := rfl
 @[simp] lemma lower_set.coe_map (s : lower_set α) (φ : F) : (s.map φ : set β) = φ '' s := rfl
+@[simp] lemma upper_set.mem_map_iff {s : upper_set α} {x : β} {φ : F} :
+  x ∈ s.map φ ↔ ∃ y, y ∈ s ∧ φ y = x := iff.rfl
+@[simp] lemma lower_set.mem_map_iff {s : lower_set α} {x : β} {φ : F} :
+  x ∈ s.map φ ↔ ∃ y, y ∈ s ∧ φ y = x := iff.rfl
 
 end has_le
 
@@ -547,11 +551,17 @@ protected def upper_set.comap (t : upper_set β) (φ : F) : upper_set α := ⟨�
 /-- The preimage of an `lower_set` under an `order_hom`-like function, as a `lower_set` -/
 def lower_set.comap (t : lower_set β) (φ : F) : lower_set α := ⟨φ ⁻¹' t, t.lower.comap φ⟩
 
-@[simp] lemma upper_set.coe_comap [order_hom_class F α β] (t : upper_set β) (φ : F) :
+@[simp] lemma upper_set.coe_comap (t : upper_set β) (φ : F) :
   ((t.comap φ : upper_set α) : set α) = φ ⁻¹' t := rfl
 
 @[simp] lemma lower_set.coe_comap (t : lower_set β) (φ : F) :
   ((t.comap φ : lower_set α) : set α) = φ ⁻¹' t := rfl
+
+@[simp] lemma upper_set.mem_comap_iff {t : upper_set β} {φ : F} {x : α} :
+  x ∈ (t.comap φ : upper_set α) ↔ φ x ∈ t := iff.rfl
+
+@[simp] lemma lower_set.mem_comap_iff {t : lower_set β} {φ : F} {x : α} :
+  x ∈ (t.comap φ : lower_set α) ↔ φ x ∈ t := iff.rfl
 
 end preorder
 
@@ -724,7 +734,7 @@ end upper_set
 
 namespace lower_set
 section preorder
-variables [preorder α] {a b : α}
+variables [preorder α] [preorder β] {a b : α}
 
 /-- Principal lower set. `set.Iic` as a lower set. The smallest lower set containing a given
 element. -/
@@ -743,20 +753,20 @@ lemma Ioi_le_Ici (a : α) : Ioi a ≤ Ici a := Ioi_subset_Ici_self
 @[simp] lemma Iic_top [order_top α] : Iic (⊤ : α) = ⊤ := set_like.coe_injective Iic_top
 @[simp] lemma Iio_bot [order_bot α] : Iio (⊥ : α) = ⊥ := set_like.coe_injective Iio_bot
 
-@[simp] lemma map_Iic [preorder α] [preorder β] [order_iso_class F α β] (a : α) (φ : F) :
+@[simp] lemma map_Iic [order_iso_class F α β] (a : α) (φ : F) :
   (Iic a).map φ = Iic (φ a) :=
 set_like.coe_injective (by {rw [coe_Iic, coe_map, coe_Iic], exact (φ : α ≃o β).image_Iic _})
 
-@[simp] lemma map_Iio [preorder α] [preorder β] [order_iso_class F α β] (a : α) (φ : F) :
+@[simp] lemma map_Iio [order_iso_class F α β] (a : α) (φ : F) :
   (Iio a).map φ = Iio (φ a) :=
 set_like.coe_injective (by {rw [coe_Iio, coe_map, coe_Iio], exact (φ : α ≃o β).image_Iio _})
 
-@[simp] lemma comap_Iic [preorder α] [preorder β] [order_iso_class F α β] (b : β) (φ : F) :
+@[simp] lemma comap_Iic [order_iso_class F α β] (b : β) (φ : F) :
   ((Iic b).comap φ : lower_set α) = Iic ((φ : α ≃o β).symm b) :=
 set_like.coe_injective (by {rw [coe_comap, coe_Iic, coe_Iic, ←order_iso.image_Iic,
   ←order_iso.preimage_eq_image_symm], refl})
 
-@[simp] lemma comap_Iio [preorder α] [preorder β] [order_iso_class F α β] (b : β) (φ : F) :
+@[simp] lemma comap_Iio [order_iso_class F α β] (b : β) (φ : F) :
   ((Iio b).comap φ : lower_set α) = Iio ((φ : α ≃o β).symm b) :=
 set_like.coe_injective (by {rw [coe_comap, coe_Iio, coe_Iio, ←order_iso.image_Iio,
   ←order_iso.preimage_eq_image_symm], refl})
@@ -802,53 +812,81 @@ section closures
 
 section preorder
 
-variables [preorder α] {s t : set α}
+variables [preorder α] [preorder β] {s t : set α} {x : α}
 
--- /-- The smallest upper set containing a given set. `set.upper_set_of` as an upper set -/
-def upper_set_of (s : set α) : upper_set α :=
+-- /-- The smallest upper set containing a given set. `set.upper_closure` as an upper set -/
+def upper_closure (s : set α) : upper_set α :=
   ⟨{x | ∃ a ∈ s, a ≤ x}, λ x y h ⟨a,ha,hax⟩, ⟨a, ha, hax.trans h⟩⟩
 
--- /-- The smallest lower set containing a given set. `set.upper_set_of` as an upper set -/
-def lower_set_of (s : set α) : lower_set α :=
+-- /-- The smallest lower set containing a given set. `set.upper_closure` as an upper set -/
+def lower_closure (s : set α) : lower_set α :=
   ⟨{x | ∃ a ∈ s, x ≤ a}, λ x y h ⟨a,ha,hax⟩, ⟨a, ha, h.trans hax⟩⟩
 
-@[simp] lemma coe_upper_set_of (s : set α) : (upper_set_of s : set α) = {x | ∃ a ∈ s, a ≤ x} := rfl
-@[simp] lemma coe_lower_set_of (s : set α) : (upper_set_of s : set α) = {x | ∃ a ∈ s, a ≤ x} := rfl
+@[simp] lemma coe_upper_closure (s : set α) : (upper_closure s : set α) = {x | ∃ a ∈ s, a ≤ x} := rfl
+@[simp] lemma coe_lower_closure (s : set α) : (lower_closure s : set α) = {x | ∃ a ∈ s, x ≤ a} := rfl
 
-lemma has_subset.subset.upper_set_of_le (hst : s ⊆ t) : upper_set_of s ≤ upper_set_of t :=
+@[simp] lemma mem_upper_closure : x ∈ upper_closure s ↔ ∃ a ∈ s, a ≤ x := iff.rfl
+@[simp] lemma mem_lower_closure : x ∈ lower_closure s ↔ ∃ a ∈ s, x ≤ a := iff.rfl
+
+lemma has_subset.subset.upper_closure_le (hst : s ⊆ t) : upper_closure s ≤ upper_closure t :=
 λ x ⟨a,ha,hax⟩, ⟨a, mem_of_mem_of_subset ha hst, hax⟩
 
-@[simp] lemma upper_set_of_union (s t : set α) :
-  upper_set_of (s ∪ t) = (upper_set_of s) ⊔ (upper_set_of t) :=
+@[simp] lemma upper_closure_union_eq_sup (s t : set α) :
+  upper_closure (s ∪ t) = (upper_closure s) ⊔ (upper_closure t) :=
 begin
   refine le_antisymm (λ x, _)
-    (sup_le (subset_union_left _ _).upper_set_of_le (subset_union_right _ _).upper_set_of_le),
-  simp only [coe_lower_set_of, mem_union_eq, exists_prop, mem_set_of_eq, upper_set.coe_sup],
+    (sup_le (subset_union_left _ _).upper_closure_le (subset_union_right _ _).upper_closure_le),
+  simp only [coe_lower_closure, mem_union_eq, exists_prop, mem_set_of_eq, upper_set.coe_sup],
   exact λ ⟨a, h, hax⟩, h.elim (λ ha, or.inl ⟨a, ha, hax⟩) (λ ha, or.inr ⟨a, ha, hax⟩),
 end
 
-@[simp] lemma upper_set_of_inter_le_inf (s t : set α) :
-  upper_set_of (s ∩ t) ≤ (upper_set_of s) ⊓ (upper_set_of t) :=
-le_inf (inter_subset_left _ _).upper_set_of_le (inter_subset_right _ _).upper_set_of_le
+@[simp] lemma upper_closure_inter_le_inf (s t : set α) :
+  upper_closure (s ∩ t) ≤ (upper_closure s) ⊓ (upper_closure t) :=
+le_inf (inter_subset_left _ _).upper_closure_le (inter_subset_right _ _).upper_closure_le
 
-lemma upper_set_of_empty : upper_set_of (∅ : set α) = ⊥ := by {ext, simp}
+lemma upper_closure_empty : upper_closure (∅ : set α) = ⊥ := by {ext, simp}
 
-lemma upper_set_of_eq_bot_iff : upper_set_of s = ⊥ ↔ s = ∅ :=
+lemma upper_closure_eq_bot_iff : upper_closure s = ⊥ ↔ s = ∅ :=
 begin
-  refine ⟨λ h, by_contra (λ hne, _), λ h, by {subst s, exact upper_set_of_empty}⟩,
-  rw [upper_set_of] at h, simp only [has_bot.bot, exists_prop] at h,
-  obtain ⟨a,ha⟩ := ne_empty_iff_nonempty.mp hne,
-  have h0 : a ∈ {x : α | ∃ (a : α), a ∈ s ∧ a ≤ x} := ⟨a, ha, rfl.le⟩,
-  exact not_mem_empty _ (h.subst h0),
+  refine ⟨λ h, set.ext (λ x, _), by {rintro rfl, exact upper_closure_empty}⟩,
+  rw [mem_empty_eq, iff_false],
+  rw [set_like.ext'_iff, coe_upper_closure, upper_set.coe_bot, eq_empty_iff_forall_not_mem] at h,
+  exact λ hx, h x ⟨x, hx, rfl.le⟩,
 end
 
-lemma upper_set_of_univ : upper_set_of (univ : set α) = ⊤ :=
+lemma upper_closure_univ : upper_closure (univ : set α) = ⊤ :=
 eq_top_iff.mpr (λ x h, ⟨x, mem_univ x, rfl.le⟩)
 
--- lemma upper_set_of_eq_top_iff : upper_set_of s = ⊤ ↔ s = univ :=
+@[simp] lemma comap_upper_closure [order_iso_class F α β] (t : set β) (φ : F) :
+  ((upper_closure t).comap φ : upper_set α) = upper_closure (φ ⁻¹' t) :=
+begin
+  ext, simp only [coe_upper_closure, mem_preimage, exists_prop, mem_set_of_eq, upper_set.coe_comap],
+  exact ⟨λ ⟨b,hb,hbx⟩,
+      ⟨equiv_like.inv φ b, by rwa ←equiv_like.right_inv φ b at hb, by rwa map_inv_le_iff⟩,
+    λ ⟨a,ha,hax⟩, ⟨φ a, ha, order_hom_class.monotone φ hax⟩⟩,
+end
+
+@[simp] lemma map_upper_closure [order_iso_class F α β] (s : set α) (φ : F) :
+  (upper_closure s).map φ = upper_closure (φ '' s) :=
+begin
+  simp only [set_like.ext_iff, mem_upper_closure, mem_image, exists_prop, exists_exists_and_eq_and,
+    upper_set.mem_map_iff],
+  exact λ x, ⟨λ ⟨y, ⟨a,has,hay⟩, hyx⟩, ⟨a,has, by rwa [←hyx, map_le_map_iff]⟩, λ ⟨a,has,hax⟩,
+    ⟨equiv_like.inv φ x, ⟨a,has, (le_map_inv_iff _).mpr hax⟩, equiv_like.right_inv _ x⟩⟩,
+end
+
+lemma to_dual_upper_closure (s : set α) :
+  (upper_closure s).to_dual = lower_closure (of_dual ⁻¹' s) := rfl
+
+lemma of_dual_upper_closure (s : set αᵒᵈ) :
+  (upper_closure s).of_dual = lower_closure (to_dual ⁻¹' s) := rfl
+
+
+
+-- lemma upper_closure_eq_top_iff : upper_closure s = ⊤ ↔ s = univ :=
 -- begin
---   refine ⟨λ h, eq_univ_of_forall (λ x, _) ,by {rintro rfl, exact upper_set_of_univ}⟩,
---   rw [upper_set_of] at h, simp only [has_top.top, eq_univ_iff_forall] at h,
+--   refine ⟨λ h, eq_univ_of_forall (λ x, _) ,by {rintro rfl, exact upper_closure_univ}⟩,
+--   rw [upper_closure] at h, simp only [has_top.top, eq_univ_iff_forall] at h,
 --   obtain ⟨y,h1,h2⟩ := h x,
 
 -- end
@@ -878,16 +916,16 @@ end closures
 --   member of the set is in the set itself.
 -- * `is_lower_set`: Predicate for a set to be a lower set. This means every element less than a member
 --   of the set is in the set itself.
--- * `set.upper_set_of` : The minimal upper_set containing a given set.
--- * `set.lower_set_of` : The minimal lower_set containing a given set.
+-- * `set.upper_closure` : The minimal upper_set containing a given set.
+-- * `set.lower_closure` : The minimal lower_set containing a given set.
 -- * `upper_set`: The type of upper sets.
 -- * `lower_set`: The type of lower sets.
 -- * `upper_set.Ici`: Principal upper set. `set.Ici` as an upper set.
 -- * `upper_set.Ioi`: Strict principal upper set. `set.Ioi` as an upper set.
 -- * `lower_set.Iic`: Principal lower set. `set.Iic` as an lower set.
 -- * `lower_set.Iio`: Strict principal lower set. `set.Iio` as an lower set.
--- * `upper_set.upper_set_of` : The minimal upper_set containing a given set, bundled.
--- * `lower_set.lower_set_of` : The minimal lower_set containing a given set, bundled.
+-- * `upper_set.upper_closure` : The minimal upper_set containing a given set, bundled.
+-- * `lower_set.lower_closure` : The minimal lower_set containing a given set, bundled.
 
 -- ## TODO
 
@@ -914,10 +952,10 @@ end closures
 -- def is_lower_set (s : set α) : Prop := ∀ ⦃a b : α⦄, b ≤ a → a ∈ s → b ∈ s
 
 -- /-- The (unbundled) smallest upper set containing a set `s`-/
--- def set.upper_set_of (s : set α) : set α := {x | ∃ a ∈ s, a ≤ x}
+-- def set.upper_closure (s : set α) : set α := {x | ∃ a ∈ s, a ≤ x}
 
 -- /-- The (unbundled) smallest lower set containing a set `s`-/
--- def set.lower_set_of (s : set α) : set α := {x | ∃ a ∈ s, x ≤ a}
+-- def set.lower_closure (s : set α) : set α := {x | ∃ a ∈ s, x ≤ a}
 
 -- lemma is_upper_set_empty : is_upper_set (∅ : set α) := λ _ _ _, id
 -- lemma is_lower_set_empty : is_lower_set (∅ : set α) := λ _ _ _, id
@@ -987,11 +1025,11 @@ end closures
 -- @[simp] lemma is_upper_set_preimage_to_dual_iff {s : set αᵒᵈ} :
 --   is_upper_set (to_dual ⁻¹' s) ↔ is_lower_set s := iff.rfl
 
--- lemma lower_set_of_preimage_of_dual (s : set α) :
---   set.lower_set_of (of_dual ⁻¹' s) = of_dual ⁻¹' (set.upper_set_of s) := rfl
+-- lemma lower_closure_preimage_of_dual (s : set α) :
+--   set.lower_closure (of_dual ⁻¹' s) = of_dual ⁻¹' (set.upper_closure s) := rfl
 
--- lemma upper_set_of_preimage_of_dual (s : set α) :
---   set.upper_set_of (of_dual ⁻¹' s) = of_dual ⁻¹' (set.lower_set_of s) := rfl
+-- lemma upper_closure_preimage_of_dual (s : set α) :
+--   set.upper_closure (of_dual ⁻¹' s) = of_dual ⁻¹' (set.lower_closure s) := rfl
 
 -- alias is_lower_set_preimage_of_dual_iff ↔ _ is_upper_set.of_dual
 -- alias is_upper_set_preimage_of_dual_iff ↔ _ is_lower_set.of_dual
@@ -1010,10 +1048,10 @@ end closures
 -- lemma is_upper_set_Ioi (a : α) : is_upper_set (Ioi a) := λ _ _, flip lt_of_lt_of_le
 -- lemma is_lower_set_Iio (a : α) : is_lower_set (Iio a) := λ _ _, lt_of_le_of_lt
 
--- lemma is_upper_set_upper_set_of (s : set α) : is_upper_set (set.upper_set_of s) :=
+-- lemma is_upper_set_upper_closure (s : set α) : is_upper_set (set.upper_closure s) :=
 -- λ x a hxa ⟨y,hy,hyx⟩, ⟨y,hy,hyx.trans hxa⟩
 
--- lemma is_lower_set_lower_set_of (s : set α) : is_lower_set (set.lower_set_of s) :=
+-- lemma is_lower_set_lower_closure (s : set α) : is_lower_set (set.lower_closure s) :=
 -- λ x a hax ⟨y,hy,hxy⟩, ⟨y,hy,hax.trans hxy⟩
 
 -- lemma is_lower_set.comap (ht : is_lower_set t) (φ : F) : is_lower_set ((φ : α → β) ⁻¹' t) :=
@@ -1027,25 +1065,25 @@ end closures
 -- section boolean_algebra
 -- variables [boolean_algebra α]
 
--- lemma lower_set_of_preimage_compl (s : set α) :
---   set.lower_set_of (compl ⁻¹' s) = compl ⁻¹' (set.upper_set_of s) :=
+-- lemma lower_closure_preimage_compl (s : set α) :
+--   set.lower_closure (compl ⁻¹' s) = compl ⁻¹' (set.upper_closure s) :=
 -- begin
 --   ext x, simp only [set.mem_set_of_eq, set.mem_preimage, exists_prop],
 --   exact ⟨λ ⟨y,hy,hxy⟩, ⟨yᶜ, hy, compl_le_compl_iff_le.mpr hxy⟩,
 --     λ ⟨y,hy,hxy⟩, ⟨yᶜ, by rwa [mem_preimage, compl_compl], le_compl_iff_le_compl.mpr hxy⟩⟩,
 -- end
 
--- lemma lower_set_of_image_compl (s : set α) :
---   set.lower_set_of (compl '' s) = compl '' (set.upper_set_of s) :=
--- by rw [←preimage_compl_eq_image_compl, lower_set_of_preimage_compl, ←preimage_compl_eq_image_compl]
+-- lemma lower_closure_image_compl (s : set α) :
+--   set.lower_closure (compl '' s) = compl '' (set.upper_closure s) :=
+-- by rw [←preimage_compl_eq_image_compl, lower_closure_preimage_compl, ←preimage_compl_eq_image_compl]
 
--- lemma upper_set_of_image_compl (s : set α) :
---   set.upper_set_of (compl '' s) = compl '' (set.lower_set_of s) :=
--- by {nth_rewrite 1 ←(@compl_compl_image _ _ s), rw [lower_set_of_image_compl, compl_compl_image]}
+-- lemma upper_closure_image_compl (s : set α) :
+--   set.upper_closure (compl '' s) = compl '' (set.lower_closure s) :=
+-- by {nth_rewrite 1 ←(@compl_compl_image _ _ s), rw [lower_closure_image_compl, compl_compl_image]}
 
--- lemma upper_set_of_preimage_compl (s : set α):
---   set.upper_set_of (compl ⁻¹' s) = compl ⁻¹' (set.lower_set_of s) :=
--- by rw [preimage_compl_eq_image_compl, preimage_compl_eq_image_compl, upper_set_of_image_compl]
+-- lemma upper_closure_preimage_compl (s : set α):
+--   set.upper_closure (compl ⁻¹' s) = compl ⁻¹' (set.lower_closure s) :=
+-- by rw [preimage_compl_eq_image_compl, preimage_compl_eq_image_compl, upper_closure_image_compl]
 
 -- end boolean_algebra
 
@@ -1329,15 +1367,15 @@ end closures
 -- /-- Strict principal upper set; `set.Ioi` as an upper set. -/
 -- def Ioi (a : α) : upper_set α := ⟨Ioi a, is_upper_set_Ioi a⟩
 
--- /-- The smallest upper set containing a given set. `set.upper_set_of` as an upper set -/
--- def upper_set_of (s : set α) : upper_set α := ⟨set.upper_set_of s, is_upper_set_upper_set_of s⟩
+-- /-- The smallest upper set containing a given set. `set.upper_closure` as an upper set -/
+-- def upper_closure (s : set α) : upper_set α := ⟨set.upper_closure s, is_upper_set_upper_closure s⟩
 
 -- @[simp] lemma coe_Ici (a : α) : ↑(Ici a) = set.Ici a := rfl
 -- @[simp] lemma coe_Ioi (a : α) : ↑(Ioi a) = set.Ioi a := rfl
--- @[simp] lemma coe_upper_set_of (s : set α) : ↑(upper_set_of s) = set.upper_set_of s := rfl
+-- @[simp] lemma coe_upper_closure (s : set α) : ↑(upper_closure s) = set.upper_closure s := rfl
 -- @[simp] lemma mem_Ici_iff : b ∈ Ici a ↔ a ≤ b := iff.rfl
 -- @[simp] lemma mem_Ioi_iff : b ∈ Ioi a ↔ a < b := iff.rfl
--- @[simp] lemma mem_upper_set_of_iff : a ∈ upper_set_of s ↔ ∃ b ∈ s, b ≤ a := iff.rfl
+-- @[simp] lemma mem_upper_closure_iff : a ∈ upper_closure s ↔ ∃ b ∈ s, b ≤ a := iff.rfl
 
 -- lemma Ioi_le_Ici (a : α) : Ioi a ≤ Ici a := Ioi_subset_Ici_self
 
@@ -1390,15 +1428,15 @@ end closures
 -- /-- Strict principal lower set; `set.Iio` as a lower set. -/
 -- def Iio (a : α) : lower_set α := ⟨Iio a, is_lower_set_Iio a⟩
 
--- /-- The smallest lower set containing a given set. `set.lower_set_of` as a lower set -/
--- def lower_set_of (s : set α) : lower_set α := ⟨set.lower_set_of s, is_lower_set_lower_set_of s⟩
+-- /-- The smallest lower set containing a given set. `set.lower_closure` as a lower set -/
+-- def lower_closure (s : set α) : lower_set α := ⟨set.lower_closure s, is_lower_set_lower_closure s⟩
 
 -- @[simp] lemma coe_Iic (a : α) : ↑(Iic a) = set.Iic a := rfl
 -- @[simp] lemma coe_Iio (a : α) : ↑(Iio a) = set.Iio a := rfl
--- @[simp] lemma coe_lower_set_of (s : set α) : ↑(lower_set_of s) = set.lower_set_of s := rfl
+-- @[simp] lemma coe_lower_closure (s : set α) : ↑(lower_closure s) = set.lower_closure s := rfl
 -- @[simp] lemma mem_Iic_iff : b ∈ Iic a ↔ b ≤ a := iff.rfl
 -- @[simp] lemma mem_Iio_iff : b ∈ Iio a ↔ b < a := iff.rfl
--- @[simp] lemma mem_lower_set_of_iff : a ∈ lower_set_of s ↔ ∃ b ∈ s, a ≤ b := iff.rfl
+-- @[simp] lemma mem_lower_closure_iff : a ∈ lower_closure s ↔ ∃ b ∈ s, a ≤ b := iff.rfl
 
 -- lemma Ioi_le_Ici (a : α) : Ioi a ≤ Ici a := Ioi_subset_Ici_self
 
