@@ -33,7 +33,7 @@ section module_and_algebra
 variables (R A B M N : Type*)
 
 /-- A module over a semiring is `finite` if it is finitely generated as a module. -/
-class module.finite [semiring R] [add_comm_monoid M] [module R M] :
+@[protected] class module.finite [semiring R] [add_comm_monoid M] [module R M] :
   Prop := (out : (⊤ : submodule R M).fg)
 
 /-- An algebra over a commutative semiring is of `finite_type` if it is finitely generated
@@ -52,10 +52,10 @@ namespace module
 variables [semiring R] [add_comm_monoid M] [module R M] [add_comm_monoid N] [module R N]
 
 lemma finite_def {R M} [semiring R] [add_comm_monoid M] [module R M] :
-  finite R M ↔ (⊤ : submodule R M).fg := ⟨λ h, h.1, λ h, ⟨h⟩⟩
+  module.finite R M ↔ (⊤ : submodule R M).fg := ⟨λ h, h.1, λ h, ⟨h⟩⟩
 
 @[priority 100] -- see Note [lower instance priority]
-instance is_noetherian.finite [is_noetherian R M] : finite R M :=
+instance is_noetherian.finite [is_noetherian R M] : module.finite R M :=
 ⟨is_noetherian.noetherian ⊤⟩
 
 namespace finite
@@ -71,30 +71,30 @@ lemma iff_add_group_fg {G : Type*} [add_comm_group G] : module.finite ℤ G ↔ 
 
 variables {R M N}
 
-lemma exists_fin [finite R M] : ∃ (n : ℕ) (s : fin n → M), span R (range s) = ⊤ :=
+lemma exists_fin [module.finite R M] : ∃ (n : ℕ) (s : fin n → M), span R (range s) = ⊤ :=
 submodule.fg_iff_exists_fin_generating_family.mp out
 
-lemma of_surjective [hM : finite R M] (f : M →ₗ[R] N) (hf : surjective f) :
-  finite R N :=
+lemma of_surjective [hM : module.finite R M] (f : M →ₗ[R] N) (hf : surjective f) :
+  module.finite R N :=
 ⟨begin
   rw [← linear_map.range_eq_top.2 hf, ← submodule.map_top],
   exact hM.1.map f
 end⟩
 
 lemma of_injective [is_noetherian R N] (f : M →ₗ[R] N)
-  (hf : function.injective f) : finite R M :=
+  (hf : function.injective f) : module.finite R M :=
 ⟨fg_of_injective f hf⟩
 
 variables (R)
 
-instance self : finite R R :=
+instance self : module.finite R R :=
 ⟨⟨{1}, by simpa only [finset.coe_singleton] using ideal.span_singleton_one⟩⟩
 
 variable (M)
 
 lemma of_restrict_scalars_finite (R A M : Type*) [comm_semiring R] [semiring A] [add_comm_monoid M]
-  [module R M] [module A M] [algebra R A] [is_scalar_tower R A M] [hM : finite R M] :
-  finite A M :=
+  [module R M] [module A M] [algebra R A] [is_scalar_tower R A M] [hM : module.finite R M] :
+  module.finite A M :=
 begin
   rw [finite_def, fg_def] at hM ⊢,
   obtain ⟨S, hSfin, hSgen⟩ := hM,
@@ -106,27 +106,27 @@ end
 
 variables {R M}
 
-instance prod [hM : finite R M] [hN : finite R N] : finite R (M × N) :=
+instance prod [hM : module.finite R M] [hN : module.finite R N] : module.finite R (M × N) :=
 ⟨begin
   rw ← submodule.prod_top,
   exact hM.1.prod hN.1
 end⟩
 
 instance pi {ι : Type*} {M : ι → Type*} [fintype ι] [Π i, add_comm_monoid (M i)]
-  [Π i, module R (M i)] [h : ∀ i, finite R (M i)] : finite R (Π i, M i) :=
+  [Π i, module R (M i)] [h : ∀ i, module.finite R (M i)] : module.finite R (Π i, M i) :=
 ⟨begin
   rw ← submodule.pi_top,
   exact submodule.fg_pi (λ i, (h i).1),
 end⟩
 
-lemma equiv [hM : finite R M] (e : M ≃ₗ[R] N) : finite R N :=
+lemma equiv [hM : module.finite R M] (e : M ≃ₗ[R] N) : module.finite R N :=
 of_surjective (e : M →ₗ[R] N) e.surjective
 
 section algebra
 
 lemma trans {R : Type*} (A B : Type*) [comm_semiring R] [comm_semiring A] [algebra R A]
   [semiring B] [algebra R B] [algebra A B] [is_scalar_tower R A B] :
-  ∀ [finite R A] [finite A B], finite R B
+  ∀ [module.finite R A] [module.finite A B], module.finite R B
 | ⟨⟨s, hs⟩⟩ ⟨⟨t, ht⟩⟩ := ⟨submodule.fg_def.2
   ⟨set.image2 (•) (↑s : set A) (↑t : set B),
     set.finite.image2 _ s.finite_to_set t.finite_to_set,
@@ -135,7 +135,7 @@ lemma trans {R : Type*} (A B : Type*) [comm_semiring R] [comm_semiring A] [algeb
 
 @[priority 100] -- see Note [lower instance priority]
 instance finite_type {R : Type*} (A : Type*) [comm_semiring R] [semiring A]
-  [algebra R A] [hRA : finite R A] : algebra.finite_type R A :=
+  [algebra R A] [hRA : module.finite R A] : algebra.finite_type R A :=
 ⟨subalgebra.fg_of_submodule_fg hRA.1⟩
 
 end algebra
@@ -956,12 +956,12 @@ https://math.stackexchange.com/a/239419/31917,
 https://www.ams.org/journals/tran/1969-138-00/S0002-9947-1969-0238839-5/.
 This is similar to `is_noetherian.injective_of_surjective_endomorphism` but only applies in the
 commutative case, but does not use a Noetherian hypothesis. -/
-theorem module.finite.injective_of_surjective_endomorphism [hfg : finite R M]
+theorem module.finite.injective_of_surjective_endomorphism [hfg : module.finite R M]
   (f_surj : function.surjective f) : function.injective f :=
 begin
   letI := module_polynomial_of_endo f,
   haveI : is_scalar_tower R R[X] M := module_polynomial_of_endo.is_scalar_tower f,
-  have hfgpoly : finite R[X] M, from finite.of_restrict_scalars_finite R _ _,
+  have hfgpoly : module.finite R[X] M, from finite.of_restrict_scalars_finite R _ _,
   have X_mul : ∀ o, (X : R[X]) • o = f o,
   { intro,
     simp, },
