@@ -62,6 +62,10 @@ filtration `ℱ` if `f` is adapted with respect to `ℱ` and for all `i ≤ j`,
 def submartingale [has_le E] (f : ι → α → E) (ℱ : filtration ι m0) (μ : measure α) : Prop :=
 adapted ℱ f ∧ (∀ i j, i ≤ j → f i ≤ᵐ[μ] μ[f j | ℱ i]) ∧ ∀ i, integrable (f i) μ
 
+lemma martingale_const (ℱ : filtration ι m0) (μ : measure α) [is_finite_measure μ] (x : E) :
+  martingale (λ _ _, x) ℱ μ :=
+⟨adapted_const ℱ _, λ i j hij, by rw condexp_const (ℱ.le _)⟩
+
 variables (E)
 lemma martingale_zero (ℱ : filtration ι m0) (μ : measure α) :
   martingale (0 : ι → α → E) ℱ μ :=
@@ -239,7 +243,39 @@ lemma sub_martingale [preorder E] [covariant_class E E (+) (≤)]
   (hf : submartingale f ℱ μ) (hg : martingale g ℱ μ) : submartingale (f - g) ℱ μ :=
 hf.sub_supermartingale hg.supermartingale
 
+lemma sup [is_finite_measure μ]
+  {f g : ι → α → ℝ} (hf : submartingale f ℱ μ) (hg : submartingale g ℱ μ) :
+  submartingale (f ⊔ g) ℱ μ :=
+begin
+  refine ⟨λ i, @strongly_measurable.sup _ _ _ _ (ℱ i) _ _ _ (hf.adapted i) (hg.adapted i),
+    λ i j hij, _, λ i, integrable.sup (hf.integrable _) (hg.integrable _)⟩,
+  refine eventually_le.sup_le _ _,
+  { exact eventually_le.trans (hf.2.1 i j hij)
+      (condexp_mono (hf.integrable _) (integrable.sup (hf.integrable j) (hg.integrable j))
+      (eventually_of_forall (λ x, le_max_left _ _))) },
+  { exact eventually_le.trans (hg.2.1 i j hij)
+      (condexp_mono (hg.integrable _) (integrable.sup (hf.integrable j) (hg.integrable j))
+      (eventually_of_forall (λ x, le_max_right _ _))) }
+end
+
+lemma pos [is_finite_measure μ] {f : ι → α → ℝ} (hf : submartingale f ℱ μ) :
+  submartingale (f⁺) ℱ μ :=
+hf.sup (martingale_zero _ _ _).submartingale
+
 end submartingale
+
+section temp
+
+variables {m : measurable_space α}
+
+-- Remy will prove this sometime after after this week
+lemma condexp_measurable_mul {ξ ζ : α → ℝ} (hξm : strongly_measurable[m] ξ) (hζ : integrable ζ μ)
+  -- (hξ : integrable ξ μ) hopefully won't need this
+  (hζξ : integrable (ξ * ζ) μ) :
+  μ[ξ * ζ | m] =ᵐ[μ] ξ * μ[ζ | m] :=
+sorry
+
+end temp
 
 section submartingale
 
@@ -469,6 +505,46 @@ lemma submartingale_iff_expected_stopped_value_mono [is_finite_measure μ]
     μ[stopped_value f τ] ≤ μ[stopped_value f π] :=
 ⟨λ hf _ _ hτ hπ hle ⟨N, hN⟩, hf.expected_stopped_value_mono hτ hπ hle hN,
  submartingale_of_expected_stopped_value_mono hadp hint⟩
+
+lemma submartingale.sum_mul_sub [is_finite_measure μ] {ξ f : ℕ → α → ℝ}
+  (hf : submartingale f 𝒢 μ) (hξ : adapted 𝒢 ξ)
+  (hbdd : ∃ R, ∀ n x, ξ n x ≤ R) (hnonneg : ∀ n x, 0 ≤ ξ n x) :
+  submartingale (λ n : ℕ, ∑ k in finset.range n, ξ k * (f (k + 1) - f k)) 𝒢 μ :=
+begin
+  have hξbdd : ∀ i, ∃ (C : ℝ), ∀ (x : α), |ξ i x| ≤ C,
+  { obtain ⟨C, hC⟩ := hbdd,
+    intro i,
+    refine ⟨C, λ x, abs_le.2 ⟨le_trans (neg_le.1 (le_trans _ (hC 0 x))) (hnonneg _ _), hC _ _⟩⟩,
+    rw neg_zero,
+    exact hnonneg 0 x },
+  have hint : ∀ m, integrable (∑ k in finset.range m, ξ k * (f (k + 1) - f k)) μ :=
+    λ m, integrable_finset_sum' _
+      (λ i hi, integrable.bdd_mul ((hf.integrable _).sub (hf.integrable _))
+      hξ.strongly_measurable.ae_strongly_measurable (hξbdd _)),
+  have hadp : adapted 𝒢 (λ (n : ℕ), ∑ (k : ℕ) in finset.range n, ξ k * (f (k + 1) - f k)),
+  { intro m,
+    refine finset.strongly_measurable_sum' _ (λ i hi, _),
+    rw finset.mem_range at hi,
+    exact (hξ.strongly_measurable_le hi.le).mul
+      ((hf.adapted.strongly_measurable_le (nat.succ_le_of_lt hi)).sub
+      (hf.adapted.strongly_measurable_le hi.le)) },
+  refine submartingale_of_condexp_sub_nonneg_nat hadp hint (λ i, _),
+  simp only [← finset.sum_Ico_eq_sub _ (nat.le_succ _), finset.sum_apply, pi.mul_apply,
+    pi.sub_apply, nat.Ico_succ_singleton, finset.sum_singleton],
+  refine eventually_le.trans (eventually_le.mul_nonneg (eventually_of_forall (hnonneg _))
+    (hf.condexp_sub_nonneg (nat.le_succ _))) (condexp_measurable_mul (hξ _)
+    ((hf.integrable _).sub (hf.integrable _)) (((hf.integrable _).sub (hf.integrable _)).bdd_mul
+    hξ.strongly_measurable.ae_strongly_measurable (hξbdd _))).symm.le,
+end
+
+/-- Given a discrete submartingale `f` and a predicatable process `ξ` (i.e. `ξ (n + 1)` is adapted)
+the process defined by `λ n, ∑ k in finset.range n, ξ (k + 1) * (f (k + 1) - f k)` is also a
+submartingale. -/
+lemma submartingale.sum_mul_sub' [is_finite_measure μ] {ξ f : ℕ → α → ℝ}
+  (hf : submartingale f 𝒢 μ) (hξ : adapted 𝒢 (λ n, ξ (n + 1)))
+  (hbdd : ∃ R, ∀ n x, ξ n x ≤ R) (hnonneg : ∀ n x, 0 ≤ ξ n x) :
+  submartingale (λ n : ℕ, ∑ k in finset.range n, ξ (k + 1) * (f (k + 1) - f k)) 𝒢 μ :=
+let ⟨R, hR⟩ := hbdd in hf.sum_mul_sub hξ ⟨R, λ n, hR _⟩ (λ n, hnonneg _)
 
 end nat
 
