@@ -162,8 +162,6 @@ end
 
 end
 
-section conditionally_complete_linear_order_bot
-
 variables [conditionally_complete_linear_order_bot ι]
 variables {a b : ℝ} {f : ι → α → ℝ} {N : ι} {n m : ℕ} {x : α}
 
@@ -210,9 +208,7 @@ begin
     (λ n, le_trans upper_crossing_le_lower_crossing lower_crossing_le_upper_crossing_succ),
 end
 
-end conditionally_complete_linear_order_bot
-
-variables {a b : ℝ} {f : ℕ → α → ℝ} {N : ℕ} {n m : ℕ} {x : α}
+variables [is_well_order ι (<)]
 
 lemma stopped_value_lower_crossing (h : lower_crossing a b f N n x ≠ N) :
   stopped_value f (lower_crossing a b f N n) x ≤ a :=
@@ -282,8 +278,10 @@ end
 
 end temp
 
+variables [succ_order ι] [is_succ_archimedean ι]
+
 -- `upper_crossing_bound_eq` provides an explicit bound
-lemma exists_upper_crossing_eq (f : ℕ → α → ℝ) (N : ℕ) (x : α) (hab : a < b) :
+lemma exists_upper_crossing_eq (f : ι → α → ℝ) (N : ι) (x : α) (hab : a < b) :
   ∃ n, upper_crossing a b f N n x = N :=
 begin
   by_contra h, push_neg at h,
@@ -301,10 +299,10 @@ begin
   exact hn.ne (upper_crossing_stabilize (not_le.1 hn').le hk)
 end
 
-lemma upper_crossing_lt_nonempty (hN : 0 < N) : {n | upper_crossing a b f N n x < N}.nonempty :=
-⟨0, hN⟩
+lemma upper_crossing_lt_nonempty (hN : N ≠ ⊥) : {n | upper_crossing a b f N n x < N}.nonempty :=
+⟨0, bot_lt_iff_ne_bot.2 hN⟩
 
-lemma upper_crossing_bound_eq (f : ℕ → α → ℝ) (N : ℕ) (x : α) (hab : a < b) (hN : 0 < N) :
+lemma upper_crossing_bound_eq (f : ℕ → α → ℝ) (N : ℕ) (x : α) (hab : a < b) (hN : N ≠ 0) :
   upper_crossing a b f N N x = N :=
 begin
   by_cases hN' : N < nat.find (exists_upper_crossing_eq f N x hab),
@@ -315,13 +313,13 @@ begin
       refine upper_crossing_lt_succ hab _,
       rw order.le_pred_iff_of_not_is_min at hm,
       { convert nat.find_min _ hm },
-      { simp [hN.ne] } },
+      { simp [hN.symm] } },
     convert strict_mono_on.Icc_id_le hmono N (nat.le_pred_of_lt hN') },
   { rw not_lt at hN',
     exact upper_crossing_stabilize hN' (nat.find_spec (exists_upper_crossing_eq f N x hab)) }
 end
 
-lemma upper_crossing_eq_of_bound_le (hab : a < b) (hN : 0 < N) (hn : N ≤ n) :
+lemma upper_crossing_eq_of_bound_le (hab : a < b) (hN : N ≠ ⊥) (hn : N ≤ n) :
   upper_crossing a b f N n x = N :=
 le_antisymm upper_crossing_le
   ((le_trans (upper_crossing_bound_eq f N x hab hN).symm.le (upper_crossing_mono hn)))
@@ -456,7 +454,7 @@ lemma upcrossing_bot [preorder ι] [order_bot ι] [has_Inf ι]
 by simp [upcrossing]
 
 lemma upper_crossing_lt_of_le_upcrossing
-  (hN : 0 < N) (hab : a < b) (hn : n ≤ upcrossing a b f N x) :
+  (hN : N ≠ ⊥) (hab : a < b) (hn : n ≤ upcrossing a b f N x) :
   upper_crossing a b f N n x < N :=
 begin
   have : upper_crossing a b f N (upcrossing a b f N x) x < N :=
@@ -473,7 +471,7 @@ begin
   convert not_mem_of_cSup_lt hn (upper_crossing_lt_bdd_above hab),
 end
 
-lemma upcrossing_le (f : ℕ → α → ℝ) (x : α) (hN : 0 < N) (hab : a < b) :
+lemma upcrossing_le (f : ℕ → α → ℝ) (x : α) (hN : N ≠ ⊥) (hab : a < b) :
   upcrossing a b f N x ≤ N :=
 begin
   refine cSup_le ⟨0, hN⟩ (λ n (hn : _ < _), _),
@@ -482,11 +480,11 @@ begin
 end
 
 lemma lower_crossing_lt_of_lt_upcrossing
-  (hN : 0 < N) (hab : a < b) (hn : n < upcrossing a b f N x) :
+  (hN : N ≠ ⊥) (hab : a < b) (hn : n < upcrossing a b f N x) :
   lower_crossing a b f N n x < N :=
 lt_of_le_of_lt lower_crossing_le_upper_crossing_succ (upper_crossing_lt_of_le_upcrossing hN hab hn)
 
-lemma le_sub_of_le_upcrossing (hN : 0 < N) (hab : a < b) (hn : n < upcrossing a b f N x) :
+lemma le_sub_of_le_upcrossing (hN : N ≠ ⊥) (hab : a < b) (hn : n < upcrossing a b f N x) :
   b - a ≤
   stopped_value f (upper_crossing a b f N (n + 1)) x -
   stopped_value f (lower_crossing a b f N n) x :=
@@ -505,7 +503,7 @@ begin
     lower_crossing_stabilize' le_rfl (le_trans this upper_crossing_le_lower_crossing)]
 end
 
-lemma mul_upcrossing_le (hf : a ≤ f N x) (hN : 0 < N) (hab : a < b) :
+lemma mul_upcrossing_le (hf : a ≤ f N x) (hN : N ≠ ⊥) (hab : a < b) :
   (b - a) * upcrossing a b f N x ≤
   ∑ k in finset.range N, upcrossing_strat a b f N k x * (f (k + 1) - f k) x :=
 begin
@@ -567,7 +565,7 @@ begin
 end
 
 lemma integral_mul_upcrossing_le_integral [is_finite_measure μ]
-  (hf : submartingale f ℱ μ) (hfN : ∀ x, a ≤ f N x) (hfzero : 0 ≤ f 0) (hN : 0 < N) (hab : a < b) :
+  (hf : submartingale f ℱ μ) (hfN : ∀ x, a ≤ f N x) (hfzero : 0 ≤ f 0) (hN : N ≠ ⊥) (hab : a < b) :
   (b - a) * μ[upcrossing a b f N] ≤ μ[f N] :=
 calc (b - a) * μ[upcrossing a b f N]
      ≤ μ[∑ k in finset.range N, upcrossing_strat a b f N k * (f (k + 1) - f k)] :
@@ -635,7 +633,7 @@ lemma upcrossing_pos_eq (hab : a < b) :
 by simp_rw [upcrossing, (crossing_pos_eq hab).1]
 
 private lemma mul_integral_upcrossing_le_integral_pos_part'' [is_finite_measure μ]
-  (hf : submartingale f ℱ μ) (hN : 0 < N) (hab : a < b) :
+  (hf : submartingale f ℱ μ) (hN : N ≠ ⊥) (hab : a < b) :
   (b - a) * μ[upcrossing a b f N] ≤ μ[λ x, (f N x - a)⁺] :=
 begin
   refine le_trans (le_of_eq _) (integral_mul_upcrossing_le_integral
